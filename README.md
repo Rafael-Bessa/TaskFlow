@@ -22,3 +22,10 @@ Este projeto foi desenvolvido por **Rafael Bessa** como um exercício prático p
 O primeiro passo para construir a API foi utilizar o [Spring Initializr](https://start.spring.io), uma ferramenta prática que simplifica a criação de projetos Spring Boot. Com ela, configurei o projeto com **Maven**. Escolhi um conjunto inicial de dependências para dar o pontapé no desenvolvimento, adicionando outras conforme a necessidade. A imagem abaixo ilustra a configuração inicial no Spring Initializr:
 
 <img width="1710" height="797" alt="image" src="https://github.com/user-attachments/assets/53ca5c26-70b3-4aab-9604-c0415e99d3a2" />
+
+<hr>
+
+Configurando o arquivo application.properties para perfis de desenvolvimento e produção, utilizando H2 para o ambiente de desenvolvimento e SQL Server para o ambiente de produção.
+
+<img width="1429" height="666" alt="image" src="https://github.com/user-attachments/assets/ee3cfca8-0ec4-4f44-93a0-85fa3f6c7b1e" />
+
