@@ -1,21 +1,45 @@
 <div align="center" id="top">
 
-# TaskFlow 
+# TaskFlow - Full Stack
 
 </div>
 
-O **TaskFlow** é uma API RESTful para gerenciamento de tarefas colaborativas, inspirada em ferramentas como Trello. A proposta é permitir que usuários criem, editem, atribuam e acompanhem tarefas de forma organizada, com autenticação segura e regras de negócio, como validação de prazos e limites de tarefas por usuário. O objetivo é criar uma solução escalável para equipes, ideal para aprendizado e demonstração de microserviços.
+O **TaskFlow** é uma aplicação **full stack** para gerenciamento de tarefas pessoais. A proposta é permitir que o usuário crie, edite, visualize e exclua suas próprias tarefas, de forma organizada, com autenticação segura e regras de negócio.
 
-Este projeto foi desenvolvido por **Rafael Bessa** como um exercício prático para aprendizado de Java com Spring Boot, focado em construir uma API robusta com integração a banco de dados e autenticação JWT. É um projeto de portfólio voltado para demonstrar habilidades em desenvolvimento back-end.
+O projeto conta com:
+
+- **Backend**: API RESTful em Java com Spring Boot, incluindo autenticação JWT e integração com banco de dados (H2 e SQL Server).  
+- **Frontend**: Aplicação web em Angular 20.3, permitindo uma interface interativa e responsiva para gerenciar tarefas pessoais.
 
 ## Detalhes do Projeto
 
-<div>
+<div align="center">
   <img src="https://img.shields.io/badge/Java-0073b7?style=for-the-badge&logo=java&logoColor=white&color=orange">
   <img src="https://img.shields.io/badge/Spring-6DB33F?style=for-the-badge&logo=spring&logoColor=white">
   <img src="https://img.shields.io/badge/Spring%20Boot-3.5.5-green.svg?style=for-the-badge&logo=spring-boot">
+  <img src="https://img.shields.io/badge/Angular-DD0031?style=for-the-badge&logo=angular&logoColor=white">
+  <img src="https://img.shields.io/badge/Database-H2%20%26%20SQL%20Server-blue?style=for-the-badge&logo=database">
 </div>
-<br>
+
+## Funcionalidades
+
+- Criação, edição e exclusão de tarefas pessoais.  
+- Visualização de tarefas organizadas por status ou prioridade.  
+- Autenticação segura com JWT.   
+- Interface responsiva com Angular 20.3.
+
+## Tecnologias Utilizadas
+
+| Backend          | Frontend       | Banco de Dados | Autenticação |
+|-----------------|----------------|----------------|--------------|
+| Java 17         | Angular 20.3   | H2 / SQL Server | JWT          |
+| Spring Boot 3.x | TypeScript     |                |              |
+
+## Desenvolvedor
+
+**Rafael Bessa** – desenvolvimento full stack, integração backend e frontend, criação de API RESTful, autenticação JWT e interface Angular.
+
+<hr>
 
 🚀 **Iniciando o Projeto com Spring Initializr**
 
