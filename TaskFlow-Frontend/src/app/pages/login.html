@@ -1,0 +1,65 @@
+<div class="login-container">
+  <div class="login-form">
+    <div class="app-header">
+      <h1 class="app-title">TaskFlow</h1>
+      <p class="app-subtitle">Gerencie suas tarefas com facilidade</p>
+    </div>
+
+    <form (ngSubmit)="onSubmit()" class="form">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          [(ngModel)]="email"
+          required
+          placeholder="Digite seu email"
+          class="input-field"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="password">Senha</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          [(ngModel)]="password"
+          required
+          placeholder="Digite sua senha"
+          class="input-field"
+        >
+      </div>
+
+      <div class="error-message" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
+      <button type="submit" [disabled]="isLoading" class="login-btn">
+        <span *ngIf="!isLoading">Entrar</span>
+        <span *ngIf="isLoading" class="loading">Entrando...</span>
+      </button>
+    </form>
+
+    <div class="register-link">
+      Não tem conta?
+      <button 
+        type="button" 
+        onclick="window.location.href = '/register'"
+        style="
+          background: none; 
+          border: none; 
+          color: #007bff; 
+          text-decoration: underline; 
+          cursor: pointer; 
+          font: inherit;
+          padding: 0;
+          margin-left: 5px;
+        "
+      >
+        Criar conta
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,170 @@
+<div class="tasks-container">
+  <!-- Header -->
+  <header class="header">
+    <div class="header-content">
+      <h1 class="app-title">TaskFlow</h1>
+      <button class="logout-btn" (click)="logout()">Sair</button>
+    </div>
+  </header>
+
+  <!-- Filters and Search -->
+  <div class="filters-section">
+    <div class="filters-row">
+      <div class="search-box">
+        <input 
+          type="text" 
+          placeholder="Buscar tasks..." 
+          [(ngModel)]="searchTerm"
+          (input)="onFilterChange()"
+          class="search-input"
+        >
+      </div>
+      
+      <select [(ngModel)]="statusFilter" (change)="onFilterChange()" class="filter-select">
+        <option value="">Todos os status</option>
+        <option value="PENDING">Pendente</option>
+        <option value="DONE">Concluída</option>
+      </select>
+      
+      <select [(ngModel)]="priorityFilter" (change)="onFilterChange()" class="filter-select">
+        <option value="">Todas as prioridades</option>
+        <option value="LOW">Baixa</option>
+        <option value="MEDIUM">Média</option>
+        <option value="HIGH">Alta</option>
+      </select>
+      
+      <button class="add-btn" (click)="openModal()">
+        <span class="add-icon">+</span>
+        Nova Task
+      </button>
+    </div>
+  </div>
+
+  <!-- Tasks Grid -->
+  <div class="tasks-grid">
+    <div class="task-card" *ngFor="let task of filteredTasks">
+      <div class="task-header">
+        <h3 class="task-title">{{ task.title }}</h3>
+        <div class="task-actions">
+          <button class="edit-btn" (click)="openModal(task)">✏️</button>
+          <button class="delete-btn" (click)="deleteTask(task.id!)">🗑️</button>
+        </div>
+      </div>
+      
+      <p class="task-description">{{ task.description }}</p>
+      
+      <div class="task-meta">
+        <span class="task-status" [class]="getStatusClass(task.status)">
+          {{ task.status === 'DONE' ? 'Concluída' : 'Pendente' }}
+        </span>
+        
+        <span class="task-priority" [class]="getPriorityClass(task.priority)">
+          {{ task.priority === 'HIGH' ? 'Alta' : 
+             task.priority === 'MEDIUM' ? 'Média' : 'Baixa' }}
+        </span>
+      </div>
+      
+      <div class="task-dates">
+        <div class="due-date" [class.overdue]="isOverdue(task.dueDate)">
+          📅 Vence: {{ formatDate(task.dueDate) }}
+        </div>
+        <div class="created-date" *ngIf="task.createdAt">
+          Criada: {{ formatDate(task.createdAt) }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="filteredTasks.length === 0">
+    <div class="empty-icon">📝</div>
+    <h3>Nenhuma task encontrada</h3>
+    <p>Crie sua primeira task ou ajuste os filtros</p>
+    <button class="add-btn" (click)="openModal()">Criar Task</button>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ isEditing ? 'Editar Task' : 'Nova Task' }}</h2>
+        <button class="close-btn" (click)="closeModal()">×</button>
+      </div>
+      
+      <form (ngSubmit)="saveTask()" class="modal-form">
+        <div class="form-group">
+          <label for="title">Título *</label>
+          <input 
+            type="text" 
+            id="title" 
+            [(ngModel)]="currentTask.title" 
+            name="title"
+            required
+            class="form-input"
+          >
+        </div>
+        
+        <div class="form-group">
+          <label for="description">Descrição</label>
+          <textarea 
+            id="description" 
+            [(ngModel)]="currentTask.description"
+            name="description"
+            rows="3"
+            class="form-textarea"
+          ></textarea>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="dueDate">Data de Vencimento *</label>
+            <input 
+              type="datetime-local" 
+              id="dueDate" 
+              [(ngModel)]="currentTask.dueDate"
+              name="dueDate"
+              required
+              class="form-input"
+            >
+          </div>
+          
+          <div class="form-group">
+            <label for="priority">Prioridade</label>
+            <select 
+              id="priority" 
+              [(ngModel)]="currentTask.priority"
+              name="priority"
+              class="form-select"
+            >
+              <option value="LOW">Baixa</option>
+              <option value="MEDIUM">Média</option>
+              <option value="HIGH">Alta</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-group" *ngIf="isEditing">
+          <label for="status">Status</label>
+          <select 
+            id="status" 
+            [(ngModel)]="currentTask.status"
+            name="status"
+            class="form-select"
+          >
+            <option value="PENDING">Pendente</option>
+            <option value="DONE">Concluída</option>
+          </select>
+        </div>
+        
+        <div class="modal-actions">
+          <button type="button" class="cancel-btn" (click)="closeModal()">
+            Cancelar
+          </button>
+          <button type="submit" class="save-btn">
+            {{ isEditing ? 'Salvar' : 'Criar' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

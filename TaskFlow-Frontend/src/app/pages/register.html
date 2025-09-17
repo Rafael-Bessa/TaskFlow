@@ -1,0 +1,148 @@
+<div class="register-container">
+  <div class="register-form">
+    <div class="app-header">
+      <h1 class="app-title">TaskFlow</h1>
+      <p class="app-subtitle">Crie sua conta e organize suas tarefas</p>
+    </div>
+    
+    <form (ngSubmit)="onSubmit()" class="form">
+      <!-- Nome Completo -->
+      <div class="form-group">
+        <label for="fullName">Nome Completo *</label>
+        <input 
+          type="text" 
+          id="fullName" 
+          [(ngModel)]="user.fullName" 
+          name="fullName"
+          (input)="onFieldChange('fullName')"
+          required
+          placeholder="Digite seu nome completo"
+          class="input-field"
+          [class.error]="showValidations && errors.fullName"
+        >
+        <div class="error-text" *ngIf="showValidations && errors.fullName">
+          {{ errors.fullName }}
+        </div>
+      </div>
+
+      <!-- Idade -->
+      <div class="form-group">
+        <label for="age">Idade *</label>
+        <input 
+          type="number" 
+          id="age" 
+          [(ngModel)]="user.age" 
+          name="age"
+          (input)="onFieldChange('age')"
+          required
+          min="0"
+          max="120"
+          placeholder="Digite sua idade"
+          class="input-field"
+          [class.error]="showValidations && errors.age"
+        >
+        <div class="error-text" *ngIf="showValidations && errors.age">
+          {{ errors.age }}
+        </div>
+      </div>
+
+      <!-- Email -->
+      <div class="form-group">
+        <label for="email">E-mail *</label>
+        <input 
+          type="email" 
+          id="email" 
+          [(ngModel)]="user.email" 
+          name="email"
+          (input)="onFieldChange('email')"
+          required
+          placeholder="Digite seu e-mail"
+          class="input-field"
+          [class.error]="showValidations && errors.email"
+        >
+        <div class="error-text" *ngIf="showValidations && errors.email">
+          {{ errors.email }}
+        </div>
+      </div>
+
+      <!-- Senha -->
+      <div class="form-group">
+        <label for="password">Senha *</label>
+        <input 
+          type="password" 
+          id="password" 
+          [(ngModel)]="user.password" 
+          name="password"
+          (input)="onFieldChange('password')"
+          required
+          placeholder="Digite sua senha"
+          class="input-field"
+          [class.error]="showValidations && errors.password"
+        >
+        
+        <!-- Indicador de força da senha -->
+        <div class="password-strength" *ngIf="user.password">
+          <div class="strength-bar">
+            <div class="strength-fill" [class]="getPasswordStrengthClass()"></div>
+          </div>
+          <span class="strength-text" [class]="getPasswordStrengthClass()">
+            Força: {{ getPasswordStrength() }}
+          </span>
+        </div>
+        
+        <div class="error-text" *ngIf="showValidations && errors.password">
+          {{ errors.password }}
+        </div>
+        
+        <!-- Requisitos da senha -->
+        <div class="password-requirements" *ngIf="user.password">
+          <p class="requirements-title">Requisitos da senha:</p>
+          <div class="requirement" [class.valid]="hasMinLength()">
+            {{ hasMinLength() ? '✓' : '✗' }} Pelo menos 6 caracteres
+          </div>
+          <div class="requirement" [class.valid]="hasUppercase()">
+            {{ hasUppercase() ? '✓' : '✗' }} Uma letra maiúscula
+          </div>
+          <div class="requirement" [class.valid]="hasLowercase()">
+            {{ hasLowercase() ? '✓' : '✗' }} Uma letra minúscula
+          </div>
+          <div class="requirement" [class.valid]="hasNumber()">
+            {{ hasNumber() ? '✓' : '✗' }} Um número
+          </div>
+          <div class="requirement" [class.valid]="hasSpecialChar()">
+            {{ hasSpecialChar() ? '✓' : '✗' }} Um caractere especial (@$!%*?&)
+          </div>
+        </div>
+      </div>
+
+      <!-- Confirmar Senha -->
+      <div class="form-group">
+        <label for="confirmPassword">Confirmar Senha *</label>
+        <input 
+          type="password" 
+          id="confirmPassword" 
+          [(ngModel)]="confirmPassword" 
+          name="confirmPassword"
+          (input)="onFieldChange('confirmPassword')"
+          required
+          placeholder="Confirme sua senha"
+          class="input-field"
+          [class.error]="showValidations && errors.confirmPassword"
+        >
+        <div class="error-text" *ngIf="showValidations && errors.confirmPassword">
+          {{ errors.confirmPassword }}
+        </div>
+      </div>
+
+      <button type="submit" [disabled]="isLoading" class="register-btn">
+        <span *ngIf="!isLoading">Criar Conta</span>
+        <span *ngIf="isLoading" class="loading">Criando conta...</span>
+      </button>
+    </form>
+
+    <div class="login-link">
+      Já tem conta? 
+      <a (click)="goToLogin()" class="link" style="cursor: pointer;">Fazer login</a>
+    </div>
+  </div>
+</div>
