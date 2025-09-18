@@ -1,11 +1,15 @@
 package bessa.morangon.rafael.TaskFlow.service;
 
+
+import bessa.morangon.rafael.TaskFlow.domain.configuration.exceptions.ResourceNotFoundException;
+import bessa.morangon.rafael.TaskFlow.domain.configuration.exceptions.UnauthorizedAccessException;
 import bessa.morangon.rafael.TaskFlow.domain.dto.TaskDTO;
 import bessa.morangon.rafael.TaskFlow.domain.model.Task;
 import bessa.morangon.rafael.TaskFlow.domain.model.User;
 import bessa.morangon.rafael.TaskFlow.domain.repository.TaskRepository;
 import bessa.morangon.rafael.TaskFlow.domain.repository.UserRepository;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,60 +21,50 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.net.URI;
 import java.security.Principal;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class TaskService {
 
     private TaskRepository taskRepository;
     private UserRepository userRepository;
     private ModelMapper modelMapper;
 
-    public ResponseEntity<TaskDTO> getTaskById(Long id) {
-        Optional<Task> task = taskRepository.findById(id);
+    public ResponseEntity<TaskDTO> getTaskById(Long id, Principal principal) {
+        log.debug("Buscando task com ID: {} para usuário: {}", id, principal.getName());
 
-        if (task.isPresent()) {
-            return ResponseEntity.ok(modelMapper.map(task.get(), TaskDTO.class));
-        }
-        return ResponseEntity.notFound().build();
+        // Buscar task
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Task", "id", id));
+
+        // Verificar se task pertence ao usuário
+        User user = getUserByEmail(principal.getName());
+        validateTaskOwnership(task, user);
+
+        return ResponseEntity.ok(modelMapper.map(task, TaskDTO.class));
     }
 
-    // CORRIGIDO: Agora filtra tasks apenas do usuário logado
     public ResponseEntity<Page<TaskDTO>> getAllTasks(Pageable pageable, Principal principal) {
-        System.out.println("Buscando tasks para usuário: " + principal.getName());
+        log.debug("Buscando tasks paginadas para usuário: {}", principal.getName());
 
-        // Busca o usuário pelo email do token
-        String email = principal.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado: " + email));
-
-        // BUSCA APENAS TASKS DO USUÁRIO LOGADO
+        User user = getUserByEmail(principal.getName());
         Page<Task> userTasks = taskRepository.findByUserId(user.getId(), pageable);
 
-        System.out.println("Encontradas " + userTasks.getTotalElements() + " tasks para o usuário " + email);
-
-        if (userTasks.isEmpty()) {
-            // Retorna lista vazia em vez de 404 - é normal não ter tasks
-            return ResponseEntity.ok(Page.empty(pageable));
-        }
+        log.info("Encontradas {} tasks para o usuário {}",
+                userTasks.getTotalElements(), principal.getName());
 
         return ResponseEntity.ok(userTasks.map(task -> modelMapper.map(task, TaskDTO.class)));
     }
 
-    // ADICIONADO: Método para buscar todas as tasks sem paginação (para Angular)
     public ResponseEntity<List<TaskDTO>> getAllTasksWithoutPagination(Principal principal) {
-        System.out.println("Buscando todas as tasks para usuário: " + principal.getName());
+        log.debug("Buscando todas as tasks para usuário: {}", principal.getName());
 
-        String email = principal.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado: " + email));
-
-        // BUSCA TODAS AS TASKS DO USUÁRIO (sem paginação)
+        User user = getUserByEmail(principal.getName());
         List<Task> userTasks = taskRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
 
-        System.out.println("Encontradas " + userTasks.size() + " tasks para o usuário " + email);
+        log.info("Encontradas {} tasks para o usuário {}", userTasks.size(), principal.getName());
 
         List<TaskDTO> taskDTOs = userTasks.stream()
                 .map(task -> modelMapper.map(task, TaskDTO.class))
@@ -85,71 +79,91 @@ public class TaskService {
             UriComponentsBuilder uriComponentsBuilder,
             Principal principal) {
 
-        String email = principal.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        log.info("Criando nova task '{}' para usuário: {}", task.getTitle(), principal.getName());
 
+        User user = getUserByEmail(principal.getName());
         task.setUser(user);
-        Task saved = taskRepository.save(task);
 
-        URI uri = uriComponentsBuilder.path("/{id}")
-                .buildAndExpand(saved.getId())
+        Task savedTask = taskRepository.save(task);
+
+        URI uri = uriComponentsBuilder.path("/tasks/{id}")
+                .buildAndExpand(savedTask.getId())
                 .toUri();
 
-        TaskDTO dto = modelMapper.map(saved, TaskDTO.class);
-        System.out.println("Task criada para usuário " + email + ": " + dto.getTitle());
+        TaskDTO dto = modelMapper.map(savedTask, TaskDTO.class);
+
+        log.info("Task criada com sucesso: ID {}, Título '{}' para usuário {}",
+                savedTask.getId(), dto.getTitle(), principal.getName());
 
         return ResponseEntity.created(uri).body(dto);
     }
 
     @Transactional
-    public ResponseEntity<?> updateTask(Task task, Long id, Principal principal) {
-        // ADICIONADO: Verificação de segurança - usuário só pode editar suas próprias tasks
-        String email = principal.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+    public ResponseEntity<TaskDTO> updateTask(Task task, Long id, Principal principal) {
+        log.info("Atualizando task ID: {} para usuário: {}", id, principal.getName());
 
-        Optional<Task> fetchedTask = taskRepository.findById(id);
+        User user = getUserByEmail(principal.getName());
 
-        if (fetchedTask.isPresent()) {
-            Task existingTask = fetchedTask.get();
+        Task existingTask = taskRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Task", "id", id));
 
-            // VERIFICAÇÃO: Task pertence ao usuário logado?
-            if (!existingTask.getUser().getId().equals(user.getId())) {
-                return ResponseEntity.status(403).body("Acesso negado: task não pertence ao usuário");
-            }
+        // Verificar se task pertence ao usuário
+        validateTaskOwnership(existingTask, user);
 
-            existingTask.setStatus(task.getStatus());
-            existingTask.setTitle(task.getTitle());
-            existingTask.setDescription(task.getDescription());
-            existingTask.setDueDate(task.getDueDate());
-            existingTask.setPriority(task.getPriority());
+        // Atualizar campos
+        existingTask.setStatus(task.getStatus());
+        existingTask.setTitle(task.getTitle());
+        existingTask.setDescription(task.getDescription());
+        existingTask.setDueDate(task.getDueDate());
+        existingTask.setPriority(task.getPriority());
 
-            return ResponseEntity.ok(modelMapper.map(existingTask, TaskDTO.class));
-        }
-        return ResponseEntity.notFound().build();
+        // Save é automático por causa do @Transactional
+        TaskDTO updatedTaskDTO = modelMapper.map(existingTask, TaskDTO.class);
+
+        log.info("Task atualizada com sucesso: ID {}, Título '{}'",
+                existingTask.getId(), existingTask.getTitle());
+
+        return ResponseEntity.ok(updatedTaskDTO);
     }
 
     @Transactional
-    public ResponseEntity<?> deleteTask(Long id, Principal principal) {
-        // ADICIONADO: Verificação de segurança
-        String email = principal.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+    public ResponseEntity<Void> deleteTask(Long id, Principal principal) {
+        log.info("Deletando task ID: {} para usuário: {}", id, principal.getName());
 
-        Optional<Task> taskOpt = taskRepository.findById(id);
+        User user = getUserByEmail(principal.getName());
 
-        if (taskOpt.isPresent()) {
-            Task task = taskOpt.get();
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Task", "id", id));
 
-            // VERIFICAÇÃO: Task pertence ao usuário logado?
-            if (!task.getUser().getId().equals(user.getId())) {
-                return ResponseEntity.status(403).body("Acesso negado: task não pertence ao usuário");
-            }
+        // Verificar se task pertence ao usuário
+        validateTaskOwnership(task, user);
 
-            taskRepository.delete(task);
-            return ResponseEntity.noContent().build();
+        taskRepository.delete(task);
+
+        log.info("Task deletada com sucesso: ID {}", id);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    // MÉTODOS AUXILIARES PRIVADOS
+
+    /**
+     * Busca usuário por email e lança exception se não encontrar
+     */
+    private User getUserByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
+    }
+
+    /**
+     * Valida se a task pertence ao usuário logado
+     */
+    private void validateTaskOwnership(Task task, User user) {
+        if (!task.getUser().getId().equals(user.getId())) {
+            log.warn("Usuário {} tentou acessar task {} que pertence ao usuário {}",
+                    user.getEmail(), task.getId(), task.getUser().getEmail());
+            throw new UnauthorizedAccessException(
+                    "You don't have permission to access this task. It belongs to another user.");
         }
-        return ResponseEntity.notFound().build();
     }
 }

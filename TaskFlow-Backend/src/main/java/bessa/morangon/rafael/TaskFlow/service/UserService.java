@@ -1,10 +1,15 @@
 package bessa.morangon.rafael.TaskFlow.service;
 
+
+import bessa.morangon.rafael.TaskFlow.domain.configuration.exceptions.ResourceNotFoundException;
+import bessa.morangon.rafael.TaskFlow.domain.configuration.exceptions.UserAlreadyExistsException;
 import bessa.morangon.rafael.TaskFlow.domain.dto.UserDTO;
 import bessa.morangon.rafael.TaskFlow.domain.model.User;
 import bessa.morangon.rafael.TaskFlow.domain.repository.UserRepository;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -18,57 +23,123 @@ import java.util.Optional;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class UserService {
 
     private UserRepository userRepository;
     private ModelMapper modelMapper;
     private PasswordEncoder passwordEncoder;
 
-    public ResponseEntity<UserDTO> getById(Long id){
-        Optional<User> byId = userRepository.findById(id);
-        if(byId.isPresent()){
-            return ResponseEntity.ok(modelMapper.map(byId.get(), UserDTO.class));
-        }
-        return ResponseEntity.notFound().build();
+    public ResponseEntity<UserDTO> getById(Long id) {
+        log.debug("Buscando usuário com ID: {}", id);
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
+
+        return ResponseEntity.ok(modelMapper.map(user, UserDTO.class));
     }
 
-    public ResponseEntity<Page<UserDTO>> getAllUsers(Pageable pageable){
-        Page<User> all = userRepository.findAll(pageable);
-        if(all.isEmpty()){
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(all.map(user -> modelMapper.map(user, UserDTO.class)));
-    }
+    public ResponseEntity<Page<UserDTO>> getAllUsers(Pageable pageable) {
+        log.debug("Buscando todos os usuários com paginação: página {}, tamanho {}",
+                pageable.getPageNumber(), pageable.getPageSize());
 
-    @Transactional
-    public ResponseEntity<UserDTO> createNewUser(User user, UriComponentsBuilder uriComponentsBuilder){
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        User save = userRepository.save(user);
-        URI uri = uriComponentsBuilder.path("/{id}").buildAndExpand(save.getId()).toUri();
-        return ResponseEntity.created(uri).body(modelMapper.map(save, UserDTO.class));
+        Page<User> users = userRepository.findAll(pageable);
+
+        // Não é erro não ter usuários, retorna página vazia
+        return ResponseEntity.ok(users.map(user -> modelMapper.map(user, UserDTO.class)));
     }
 
     @Transactional
-    public ResponseEntity<?> updateUser(User user, Long id){
-        Optional<User> byId = userRepository.findById(id);
+    public ResponseEntity<UserDTO> createNewUser(User user, UriComponentsBuilder uriComponentsBuilder) {
+        log.info("Tentando criar novo usuário com email: {}", user.getEmail());
 
-        if(byId.isPresent()){
-            byId.get().setAge(user.getAge());
-            byId.get().setEmail(user.getEmail());
-            byId.get().setFullName(user.getFullName());
-            byId.get().setPassword(user.getPassword());
-            return ResponseEntity.ok(modelMapper.map(byId.get(),UserDTO.class));
+        // 1. VERIFICAÇÃO PRÉVIA - Se email já existe
+        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
+            log.warn("Tentativa de criar usuário com email já existente: {}", user.getEmail());
+            throw new UserAlreadyExistsException(user.getEmail());
         }
-        return ResponseEntity.notFound().build();
+
+        try {
+            // 2. Criptografar senha
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+
+            // 3. Salvar usuário
+            User savedUser = userRepository.save(user);
+
+            // 4. Criar URI de resposta
+            URI uri = uriComponentsBuilder.path("/users/{id}")
+                    .buildAndExpand(savedUser.getId())
+                    .toUri();
+
+            log.info("Usuário criado com sucesso: ID {}, Email {}",
+                    savedUser.getId(), savedUser.getEmail());
+
+            return ResponseEntity.created(uri).body(modelMapper.map(savedUser, UserDTO.class));
+
+        } catch (DataIntegrityViolationException ex) {
+            // 5. Se mesmo assim der erro de constraint (race condition), lança exception customizada
+            log.error("Erro de integridade de dados ao criar usuário: {}", ex.getMessage());
+            throw new UserAlreadyExistsException(user.getEmail());
+        }
     }
 
     @Transactional
-    public ResponseEntity<?> deleteUser(Long id){
-        Optional<User> byId = userRepository.findById(id);
-        if(byId.isPresent()){
-            userRepository.delete(byId.get());
-            return ResponseEntity.noContent().build();
+    public ResponseEntity<UserDTO> updateUser(User user, Long id) {
+        log.info("Tentando atualizar usuário ID: {}", id);
+
+        User existingUser = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
+
+        // Verificar se o novo email já está em uso por outro usuário
+        if (!existingUser.getEmail().equals(user.getEmail())) {
+            Optional<User> userWithSameEmail = userRepository.findByEmail(user.getEmail());
+            if (userWithSameEmail.isPresent() && !userWithSameEmail.get().getId().equals(id)) {
+                log.warn("Tentativa de atualizar usuário {} com email já existente: {}", id, user.getEmail());
+                throw new UserAlreadyExistsException(user.getEmail());
+            }
         }
-        return ResponseEntity.notFound().build();
+
+        try {
+            // Atualizar campos
+            existingUser.setAge(user.getAge());
+            existingUser.setEmail(user.getEmail());
+            existingUser.setFullName(user.getFullName());
+
+            // Se senha foi fornecida, criptografar
+            if (user.getPassword() != null && !user.getPassword().trim().isEmpty()) {
+                existingUser.setPassword(passwordEncoder.encode(user.getPassword()));
+            }
+
+            // Save é automático por causa do @Transactional
+            log.info("Usuário atualizado com sucesso: ID {}", id);
+
+            return ResponseEntity.ok(modelMapper.map(existingUser, UserDTO.class));
+
+        } catch (DataIntegrityViolationException ex) {
+            log.error("Erro de integridade de dados ao atualizar usuário {}: {}", id, ex.getMessage());
+            throw new UserAlreadyExistsException(user.getEmail());
+        }
+    }
+
+    @Transactional
+    public ResponseEntity<Void> deleteUser(Long id) {
+        log.info("Tentando deletar usuário ID: {}", id);
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
+
+        userRepository.delete(user);
+
+        log.info("Usuário deletado com sucesso: ID {}", id);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    // MÉTODO AUXILIAR: Buscar usuário por email (usado em outros services)
+    public User findByEmail(String email) {
+        log.debug("Buscando usuário por email: {}", email);
+
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
     }
 }
