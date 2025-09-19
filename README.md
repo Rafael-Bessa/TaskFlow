@@ -38,9 +38,18 @@ O backend foi desenvolvido em **Java 17 + Spring Boot 3.x**, com:
 - Arquitetura em camadas (**Model, Repository, Service, DTO, Controller**)  
 
 <div align="center">
-  <img width="800" src="URL_PRINT_SPRING" alt="Endpoints Spring Boot">
+  <img width="1855" height="959" alt="image" src="https://github.com/user-attachments/assets/60701ddd-b36e-4319-9b9c-2652b12327a5" />
+
+
   <p><em>🔎 Exemplo de endpoints RESTful no backend</em></p>
 </div>
+
+## 📖 Documentação da API
+
+A documentação da API está disponível via **Swagger UI**:
+
+👉 Acesse em: `http://localhost:8080/swagger.html`
+
 
 ---
 
