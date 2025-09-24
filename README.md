@@ -99,6 +99,22 @@ A interface consome a API do backend, mantendo segurança via **JWT**.
 ```bash
 git clone https://github.com/Rafael-Bessa/taskflow.git
 cd taskflow
+```
 
+### 🖥️ Executar o Backend
+```bash
+cd TaskFlow-Backend
+./mvnw spring-boot:run
+```
 
+A API sobe em: http://localhost:8080
+
+### 🌐 Executar o Frontend
+```bash
+cd TaskFlow-Frontend
+npm install
+ng serve
+```
+
+A aplicação roda em: http://localhost:4200
 
