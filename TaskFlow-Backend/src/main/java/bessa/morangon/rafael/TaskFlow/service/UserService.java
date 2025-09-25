@@ -31,7 +31,6 @@ public class UserService {
     private PasswordEncoder passwordEncoder;
 
     public ResponseEntity<UserDTO> getById(Long id) {
-        log.debug("Buscando usuário com ID: {}", id);
 
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
@@ -40,44 +39,27 @@ public class UserService {
     }
 
     public ResponseEntity<Page<UserDTO>> getAllUsers(Pageable pageable) {
-        log.debug("Buscando todos os usuários com paginação: página {}, tamanho {}",
-                pageable.getPageNumber(), pageable.getPageSize());
 
         Page<User> users = userRepository.findAll(pageable);
-
-        // Não é erro não ter usuários, retorna página vazia
         return ResponseEntity.ok(users.map(user -> modelMapper.map(user, UserDTO.class)));
     }
 
     @Transactional
     public ResponseEntity<UserDTO> createNewUser(User user, UriComponentsBuilder uriComponentsBuilder) {
-        log.info("Tentando criar novo usuário com email: {}", user.getEmail());
 
-        // 1. VERIFICAÇÃO PRÉVIA - Se email já existe
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
-            log.warn("Tentativa de criar usuário com email já existente: {}", user.getEmail());
             throw new UserAlreadyExistsException(user.getEmail());
         }
 
         try {
-            // 2. Criptografar senha
             user.setPassword(passwordEncoder.encode(user.getPassword()));
-
-            // 3. Salvar usuário
             User savedUser = userRepository.save(user);
-
-            // 4. Criar URI de resposta
             URI uri = uriComponentsBuilder.path("/users/{id}")
                     .buildAndExpand(savedUser.getId())
                     .toUri();
-
-            log.info("Usuário criado com sucesso: ID {}, Email {}",
-                    savedUser.getId(), savedUser.getEmail());
-
             return ResponseEntity.created(uri).body(modelMapper.map(savedUser, UserDTO.class));
 
         } catch (DataIntegrityViolationException ex) {
-            // 5. Se mesmo assim der erro de constraint (race condition), lança exception customizada
             log.error("Erro de integridade de dados ao criar usuário: {}", ex.getMessage());
             throw new UserAlreadyExistsException(user.getEmail());
         }
@@ -85,7 +67,6 @@ public class UserService {
 
     @Transactional
     public ResponseEntity<UserDTO> updateUser(User user, Long id) {
-        log.info("Tentando atualizar usuário ID: {}", id);
 
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
@@ -94,18 +75,16 @@ public class UserService {
         if (!existingUser.getEmail().equals(user.getEmail())) {
             Optional<User> userWithSameEmail = userRepository.findByEmail(user.getEmail());
             if (userWithSameEmail.isPresent() && !userWithSameEmail.get().getId().equals(id)) {
-                log.warn("Tentativa de atualizar usuário {} com email já existente: {}", id, user.getEmail());
                 throw new UserAlreadyExistsException(user.getEmail());
             }
         }
 
         try {
-            // Atualizar campos
+
             existingUser.setAge(user.getAge());
             existingUser.setEmail(user.getEmail());
             existingUser.setFullName(user.getFullName());
 
-            // Se senha foi fornecida, criptografar
             if (user.getPassword() != null && !user.getPassword().trim().isEmpty()) {
                 existingUser.setPassword(passwordEncoder.encode(user.getPassword()));
             }
@@ -123,22 +102,16 @@ public class UserService {
 
     @Transactional
     public ResponseEntity<Void> deleteUser(Long id) {
-        log.info("Tentando deletar usuário ID: {}", id);
 
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
 
         userRepository.delete(user);
-
-        log.info("Usuário deletado com sucesso: ID {}", id);
-
         return ResponseEntity.noContent().build();
     }
 
     // MÉTODO AUXILIAR: Buscar usuário por email (usado em outros services)
     public User findByEmail(String email) {
-        log.debug("Buscando usuário por email: {}", email);
-
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
     }

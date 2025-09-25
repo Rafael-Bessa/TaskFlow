@@ -33,7 +33,7 @@ public class TaskService {
     private ModelMapper modelMapper;
 
     public ResponseEntity<TaskDTO> getTaskById(Long id, Principal principal) {
-        log.debug("Buscando task com ID: {} para usuário: {}", id, principal.getName());
+        // log.debug("Buscando task com ID: {} para usuário: {}", id, principal.getName());
 
         // Buscar task
         Task task = taskRepository.findById(id)
@@ -47,24 +47,17 @@ public class TaskService {
     }
 
     public ResponseEntity<Page<TaskDTO>> getAllTasks(Pageable pageable, Principal principal) {
-        log.debug("Buscando tasks paginadas para usuário: {}", principal.getName());
 
         User user = getUserByEmail(principal.getName());
         Page<Task> userTasks = taskRepository.findByUserId(user.getId(), pageable);
-
-        log.info("Encontradas {} tasks para o usuário {}",
-                userTasks.getTotalElements(), principal.getName());
 
         return ResponseEntity.ok(userTasks.map(task -> modelMapper.map(task, TaskDTO.class)));
     }
 
     public ResponseEntity<List<TaskDTO>> getAllTasksWithoutPagination(Principal principal) {
-        log.debug("Buscando todas as tasks para usuário: {}", principal.getName());
 
         User user = getUserByEmail(principal.getName());
         List<Task> userTasks = taskRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
-
-        log.info("Encontradas {} tasks para o usuário {}", userTasks.size(), principal.getName());
 
         List<TaskDTO> taskDTOs = userTasks.stream()
                 .map(task -> modelMapper.map(task, TaskDTO.class))
@@ -79,8 +72,6 @@ public class TaskService {
             UriComponentsBuilder uriComponentsBuilder,
             Principal principal) {
 
-        log.info("Criando nova task '{}' para usuário: {}", task.getTitle(), principal.getName());
-
         User user = getUserByEmail(principal.getName());
         task.setUser(user);
 
@@ -92,15 +83,11 @@ public class TaskService {
 
         TaskDTO dto = modelMapper.map(savedTask, TaskDTO.class);
 
-        log.info("Task criada com sucesso: ID {}, Título '{}' para usuário {}",
-                savedTask.getId(), dto.getTitle(), principal.getName());
-
         return ResponseEntity.created(uri).body(dto);
     }
 
     @Transactional
     public ResponseEntity<TaskDTO> updateTask(Task task, Long id, Principal principal) {
-        log.info("Atualizando task ID: {} para usuário: {}", id, principal.getName());
 
         User user = getUserByEmail(principal.getName());
 
@@ -120,15 +107,11 @@ public class TaskService {
         // Save é automático por causa do @Transactional
         TaskDTO updatedTaskDTO = modelMapper.map(existingTask, TaskDTO.class);
 
-        log.info("Task atualizada com sucesso: ID {}, Título '{}'",
-                existingTask.getId(), existingTask.getTitle());
-
         return ResponseEntity.ok(updatedTaskDTO);
     }
 
     @Transactional
     public ResponseEntity<Void> deleteTask(Long id, Principal principal) {
-        log.info("Deletando task ID: {} para usuário: {}", id, principal.getName());
 
         User user = getUserByEmail(principal.getName());
 
@@ -140,24 +123,17 @@ public class TaskService {
 
         taskRepository.delete(task);
 
-        log.info("Task deletada com sucesso: ID {}", id);
-
         return ResponseEntity.noContent().build();
     }
 
     // MÉTODOS AUXILIARES PRIVADOS
 
-    /**
-     * Busca usuário por email e lança exception se não encontrar
-     */
+
     private User getUserByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
     }
 
-    /**
-     * Valida se a task pertence ao usuário logado
-     */
     private void validateTaskOwnership(Task task, User user) {
         if (!task.getUser().getId().equals(user.getId())) {
             log.warn("Usuário {} tentou acessar task {} que pertence ao usuário {}",
