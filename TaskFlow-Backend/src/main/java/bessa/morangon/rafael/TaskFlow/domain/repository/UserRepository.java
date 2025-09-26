@@ -8,7 +8,7 @@ import java.util.Optional;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
-    // CORRIGIDO: Era Optional<Object>, agora é Optional<User>
+
     Optional<User> findByEmail(String email);
 
     // ADICIONADO: Método para verificar se email existe (performance)
