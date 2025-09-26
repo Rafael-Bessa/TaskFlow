@@ -99,7 +99,7 @@ class TaskServiceTest {
         uriBuilder = UriComponentsBuilder.newInstance();
 
         // Mock Principal - sempre retorna o email do usuário válido
-        when(principal.getName()).thenReturn("joao@email.com");
+        lenient().when(principal.getName()).thenReturn("joao@email.com");
     }
 
     @Nested
