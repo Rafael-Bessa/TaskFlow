@@ -53,7 +53,7 @@ A documentação da API está disponível via **Swagger UI**:
 
 ---
 
-## 🌐 Frontend - Angular 20.3
+## 🌐 Frontend - Angular versão 20.3
 
 O frontend foi desenvolvido em **Angular + TypeScript**.  
 A interface consome a API do backend, mantendo segurança via **JWT**.  
