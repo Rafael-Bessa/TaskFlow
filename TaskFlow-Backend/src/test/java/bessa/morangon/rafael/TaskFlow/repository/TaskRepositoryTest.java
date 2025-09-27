@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.*;
  * filtros e performance.
  */
 @DataJpaTest
-@ActiveProfiles("dev")
+@ActiveProfiles("test")
 @EntityScan(basePackages = "bessa.morangon.rafael.TaskFlow.domain.model")
 @EnableJpaRepositories(basePackages = "bessa.morangon.rafael.TaskFlow.domain.repository")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
