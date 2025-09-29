@@ -23,13 +23,19 @@ export class Register {
   isLoading: boolean = false;
   showValidations: boolean = false;
   errors: any = {};
+  ageOptions: number[] = [];
 
   constructor(
     private router: Router,
     private authService: AuthService
-  ) {}
+  ) {
+    // Gera opções de idade de 13 a 100 anos
+    for (let i = 13; i <= 100; i++) {
+      this.ageOptions.push(i);
+    }
+  }
 
-  // Funções de validação de senha (mantidas)
+  // Funções de validação de senha
   hasMinLength(): boolean {
     return this.user.password.length >= 6;
   }
@@ -84,8 +90,8 @@ export class Register {
       this.errors.fullName = 'Nome completo é obrigatório';
     }
     
-    if (!this.user.age || this.user.age < 1 || this.user.age > 120) {
-      this.errors.age = 'Idade deve ser entre 1 e 120 anos';
+    if (!this.user.age || this.user.age === 0) {
+      this.errors.age = 'Por favor, selecione sua idade';
     }
     
     if (!this.user.email || !this.user.email.includes('@')) {

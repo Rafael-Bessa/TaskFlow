@@ -28,19 +28,22 @@
       <!-- Idade -->
       <div class="form-group">
         <label for="age">Idade *</label>
-        <input 
-          type="number" 
-          id="age" 
-          [(ngModel)]="user.age" 
-          name="age"
-          (input)="onFieldChange('age')"
-          required
-          min="0"
-          max="120"
-          placeholder="Digite sua idade"
-          class="input-field"
-          [class.error]="showValidations && errors.age"
-        >
+        <div class="select-wrapper">
+          <select 
+            id="age" 
+            [(ngModel)]="user.age" 
+            name="age"
+            (change)="onFieldChange('age')"
+            required
+            class="input-field select-field"
+            [class.error]="showValidations && errors.age"
+            [class.placeholder]="!user.age || user.age === 0"
+          >
+            <option [ngValue]="0" disabled selected>Selecione sua idade</option>
+            <option *ngFor="let age of ageOptions" [ngValue]="age">{{ age }} anos</option>
+          </select>
+          <span class="select-arrow">▼</span>
+        </div>
         <div class="error-text" *ngIf="showValidations && errors.age">
           {{ errors.age }}
         </div>

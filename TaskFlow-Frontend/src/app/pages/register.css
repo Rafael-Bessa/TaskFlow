@@ -54,6 +54,48 @@
   margin-bottom: 1.5rem;
 }
 
+/* Select Wrapper Styling */
+.select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.select-field {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 3rem;
+  cursor: pointer;
+  background-color: white;
+}
+
+.select-field.placeholder {
+  color: #999;
+}
+
+.select-field option {
+  color: #333;
+}
+
+.select-arrow {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #667eea;
+  font-size: 0.8rem;
+  transition: transform 0.3s ease;
+}
+
+.select-wrapper:hover .select-arrow {
+  transform: translateY(-50%) scale(1.1);
+}
+
+.select-field:focus ~ .select-arrow {
+  transform: translateY(-50%) rotate(180deg);
+}
+
 label {
   display: block;
   margin-bottom: 0.5rem;
@@ -120,17 +162,17 @@ label {
   width: 0%;
 }
 
-.strength-fill.strength-weak {
+.strength-fill.fraca {
   width: 33%;
   background: linear-gradient(90deg, #e74c3c, #e67e22);
 }
 
-.strength-fill.strength-medium {
+.strength-fill.média {
   width: 66%;
   background: linear-gradient(90deg, #f39c12, #f1c40f);
 }
 
-.strength-fill.strength-strong {
+.strength-fill.forte {
   width: 100%;
   background: linear-gradient(90deg, #27ae60, #2ecc71);
 }
@@ -142,15 +184,15 @@ label {
   letter-spacing: 0.5px;
 }
 
-.strength-text.strength-weak {
+.strength-text.fraca {
   color: #e74c3c;
 }
 
-.strength-text.strength-medium {
+.strength-text.média {
   color: #f39c12;
 }
 
-.strength-text.strength-strong {
+.strength-text.forte {
   color: #27ae60;
 }
 
