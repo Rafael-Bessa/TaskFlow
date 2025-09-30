@@ -183,7 +183,7 @@ export class Register {
     this.createPopup(title, message, 'error');
   }
 
-  // MÉTODO PARA CRIAR POPUP DINÂMICO
+  // MÉTODO PARA CRIAR POPUP DINÂMICO - CORRIGIDO
   private createPopup(title: string, message: string, type: 'success' | 'error', callback?: () => void): void {
     // Remove popup anterior se existir
     const existingPopup = document.getElementById('error-popup');
@@ -195,14 +195,14 @@ export class Register {
     const popup = document.createElement('div');
     popup.id = 'error-popup';
     popup.innerHTML = `
-      <div class="popup-overlay">
+      <div class="popup-overlay" onclick="event.target === this && closePopup()">
         <div class="popup-content ${type}">
           <div class="popup-icon">
             ${type === 'error' ? '⚠️' : '✅'}
           </div>
           <h3 class="popup-title">${title}</h3>
           <p class="popup-message">${message.replace(/\n/g, '<br>')}</p>
-          <button class="popup-button" onclick="this.closePopup()">
+          <button class="popup-button" onclick="closePopup()">
             ${type === 'error' ? 'Entendi' : 'Continuar'}
           </button>
         </div>
@@ -224,6 +224,7 @@ export class Register {
         align-items: center;
         z-index: 10000;
         animation: fadeIn 0.3s ease-out;
+        cursor: pointer;
       }
 
       #error-popup .popup-content {
@@ -236,6 +237,7 @@ export class Register {
         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
         animation: slideUp 0.3s ease-out;
         position: relative;
+        cursor: default;
       }
 
       #error-popup .popup-content.error {
@@ -281,6 +283,10 @@ export class Register {
         transform: translateY(-2px);
       }
 
+      #error-popup .popup-button:active {
+        transform: translateY(0);
+      }
+
       @keyframes fadeIn {
         from { opacity: 0; }
         to { opacity: 1; }
@@ -290,12 +296,23 @@ export class Register {
         from { transform: translateY(50px); opacity: 0; }
         to { transform: translateY(0); opacity: 1; }
       }
+
+      @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+      }
     `;
 
-    // Função para fechar popup
+    // Função para fechar popup com animação - CORRIGIDO
     (window as any).closePopup = () => {
-      popup.remove();
-      if (callback) callback();
+      const popupElement = document.getElementById('error-popup');
+      if (popupElement) {
+        popupElement.style.animation = 'fadeOut 0.2s ease-out';
+        setTimeout(() => {
+          popupElement.remove();
+          if (callback) callback();
+        }, 200);
+      }
     };
 
     // Adiciona ao DOM

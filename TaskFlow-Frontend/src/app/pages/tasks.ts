@@ -100,7 +100,6 @@ export class Tasks implements OnInit, OnDestroy {
     
     console.log('Carregando tasks para usuário:', this.authService.getCurrentUser()?.email);
     
-    // ✅ CORRIGIDO: Só faz subscribe uma vez
     const loadSub = this.taskService.getAllTasks().subscribe({
       next: (tasks: Task[]) => {
         console.log('Tasks carregadas:', tasks.length, 'tasks');
@@ -145,12 +144,22 @@ export class Tasks implements OnInit, OnDestroy {
   openModal(task?: Task) {
     this.showModal = true;
     this.isEditing = !!task;
-    this.currentTask = task ? { ...task } : this.getEmptyTask();
+    
+    if (task) {
+      // Editando: converte a data do backend para o formato do input date
+      this.currentTask = { 
+        ...task,
+        dueDate: this.convertToDateInputFormat(task.dueDate)
+      };
+    } else {
+      // Criando: usa task vazia
+      this.currentTask = this.getEmptyTask();
+    }
+    
     this.errorMessage = '';
     this.cdr.markForCheck();
   }
 
-  // ✅ CORRIGIDO: Força update da view
   closeModal() {
     this.showModal = false;
     this.currentTask = this.getEmptyTask();
@@ -159,8 +168,25 @@ export class Tasks implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  // Converte data do backend (ISO) para formato YYYY-MM-DD do input type="date"
+  private convertToDateInputFormat(isoDate: string): string {
+    if (!isoDate) return '';
+    const date = new Date(isoDate);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  // Converte data do input (YYYY-MM-DD) para ISO com horário 23:59:59
+  private convertToEndOfDay(dateString: string): string {
+    if (!dateString) return '';
+    // Adiciona o horário 23:59:59 no final do dia
+    return `${dateString}T23:59:59`;
+  }
+
   saveTask() {
-    if (!this.currentTask.title.trim()) {
+    if (!this.currentTask.title || !this.currentTask.title.trim()) {
       this.errorMessage = 'Título é obrigatório';
       this.cdr.markForCheck();
       return;
@@ -176,15 +202,23 @@ export class Tasks implements OnInit, OnDestroy {
     this.errorMessage = '';
     this.cdr.markForCheck();
 
+    // Converte a data para o final do dia (23:59:59)
+    const dueDateWithTime = this.convertToEndOfDay(this.currentTask.dueDate);
+
     if (this.isEditing && this.currentTask.id) {
-      // ✅ EDITANDO task existente
+      // EDITANDO task existente
       console.log('Editando task:', this.currentTask.id);
       
-      const editSub = this.taskService.updateTask(this.currentTask.id, this.currentTask).subscribe({
+      const taskToUpdate = {
+        ...this.currentTask,
+        dueDate: dueDateWithTime
+      };
+      
+      const editSub = this.taskService.updateTask(this.currentTask.id, taskToUpdate).subscribe({
         next: (updatedTask) => {
           console.log('Task atualizada com sucesso:', updatedTask);
-          this.closeModal(); // ✅ FECHA O MODAL
           this.isLoading = false;
+          this.closeModal();
           this.cdr.markForCheck();
         },
         error: (error) => {
@@ -196,22 +230,24 @@ export class Tasks implements OnInit, OnDestroy {
       this.subscriptions.push(editSub);
 
     } else {
-      // ✅ CRIANDO nova task
+      // CRIANDO nova task
       console.log('Criando nova task:', this.currentTask.title);
       
       const newTask: Task = {
-        title: this.currentTask.title,
-        description: this.currentTask.description,
-        dueDate: this.currentTask.dueDate,
-        priority: this.currentTask.priority,
+        title: this.currentTask.title.trim(),
+        description: this.currentTask.description?.trim() || '',
+        dueDate: dueDateWithTime, // Data com horário 23:59:59
+        priority: this.currentTask.priority || Priority.MEDIUM,
         status: Status.PENDING
       };
+
+      console.log('Dados da nova task (com horário):', newTask);
 
       const createSub = this.taskService.createTask(newTask).subscribe({
         next: (createdTask) => {
           console.log('Task criada com sucesso:', createdTask);
-          this.closeModal(); // ✅ FECHA O MODAL
           this.isLoading = false;
+          this.closeModal();
           this.cdr.markForCheck();
         },
         error: (error) => {
@@ -228,18 +264,19 @@ export class Tasks implements OnInit, OnDestroy {
     this.isLoading = false;
     
     if (error.status === 401) {
+      this.errorMessage = 'Sessão expirada. Faça login novamente';
       this.authService.logout();
     } else if (error.status === 400) {
-      this.errorMessage = 'Dados inválidos. Verifique os campos';
+      this.errorMessage = error.error?.message || 'Dados inválidos. Verifique os campos';
     } else if (error.status === 0) {
       this.errorMessage = 'Erro de conexão. Verifique se o servidor está rodando';
     } else {
-      this.errorMessage = 'Erro ao salvar a task. Tente novamente';
+      this.errorMessage = error.error?.message || 'Erro ao salvar a task. Tente novamente';
     }
+    
     this.cdr.markForCheck();
   }
 
-  // ✅ CORRIGIDO: Confirmação e recarregamento
   deleteTask(id: number) {
     if (confirm('Tem certeza que deseja excluir esta task?')) {
       console.log('Deletando task:', id);
@@ -247,7 +284,6 @@ export class Tasks implements OnInit, OnDestroy {
       const deleteSub = this.taskService.deleteTask(id).subscribe({
         next: () => {
           console.log('Task deletada com sucesso:', id);
-          // TaskService já recarrega a lista automaticamente
         },
         error: (error) => {
           console.error('Erro ao deletar task:', error);
@@ -266,7 +302,6 @@ export class Tasks implements OnInit, OnDestroy {
     }
   }
 
-  // ✅ CORRIGIDO: Toggle de status
   toggleTaskStatus(task: Task) {
     if (!task.id) return;
     

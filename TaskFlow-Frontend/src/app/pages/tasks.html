@@ -79,8 +79,7 @@
   <div class="empty-state" *ngIf="filteredTasks.length === 0">
     <div class="empty-icon">📝</div>
     <h3>Nenhuma task encontrada</h3>
-    <p>Crie sua primeira task ou ajuste os filtros</p>
-    <button class="add-btn" (click)="openModal()">Criar Task</button>
+    <p>Use o botão "Nova Task" acima para criar sua primeira task ou ajuste os filtros de busca</p>
   </div>
 
   <!-- Modal -->
@@ -119,7 +118,7 @@
           <div class="form-group">
             <label for="dueDate">Data de Vencimento *</label>
             <input 
-              type="datetime-local" 
+              type="date" 
               id="dueDate" 
               [(ngModel)]="currentTask.dueDate"
               name="dueDate"
