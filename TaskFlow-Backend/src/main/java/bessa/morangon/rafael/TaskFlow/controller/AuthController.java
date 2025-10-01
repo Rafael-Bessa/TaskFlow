@@ -27,15 +27,13 @@ public class AuthController {
     @PostMapping
     public ResponseEntity<?> auth(@RequestBody AuthRequest req) {
         try {
-            // ADICIONADO: Log para debug
-            System.out.println("Tentativa de login para: " + req.email());
 
             // Autentica o usuário
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(req.email(), req.password())
             );
 
-            // ADICIONADO: Busca dados do usuário para retornar no response
+            //Busca dados do usuário para retornar no response
             Optional<User> userOpt = userRepository.findByEmail(req.email());
             if (userOpt.isEmpty()) {
                 return ResponseEntity.status(401).body(Map.of("error", "User not found"));
@@ -44,7 +42,7 @@ public class AuthController {
             User user = userOpt.get();
             String token = jwtUtil.generateToken(req.email());
 
-            // MODIFICADO: Retorna token + dados do usuário (como esperado pelo Angular)
+            // Retorna token + dados do usuário (como esperado pelo Angular)
             Map<String, Object> response = Map.of(
                     "token", token,
                     "user", Map.of(
@@ -53,12 +51,9 @@ public class AuthController {
                             "email", user.getEmail()
                     )
             );
-
-            System.out.println("Login bem-sucedido para: " + req.email());
             return ResponseEntity.ok(response);
 
         } catch (Exception ex) {
-            System.err.println("Erro no login: " + ex.getMessage());
             ex.printStackTrace(); // ADICIONADO: Para debug
             return ResponseEntity.status(401).body(Map.of("error", "Invalid credentials"));
         }

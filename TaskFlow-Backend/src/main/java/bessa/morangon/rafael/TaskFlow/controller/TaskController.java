@@ -24,7 +24,7 @@ public class TaskController {
 
     private TaskService taskService;
 
-    // CORRIGIDO: Agora passa Principal para verificar propriedade da task
+    // Passa Principal para verificar propriedade da task
     @GetMapping("/{id}")
     public ResponseEntity<TaskDTO> getTaskById(@PathVariable Long id, Principal principal) {
         log.info("GET /tasks/{} - Usuário: {}", id, principal.getName());
